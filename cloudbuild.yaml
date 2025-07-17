@@ -1,19 +1,44 @@
+substitutions:
+  _REGION: us-central1
+  _REPOSITORY: runa-apps
+  _SERVICE_NAME: runa-matcher
+
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/runa-matcher:$BUILD_ID', '.']
+  # Crear repositorio si no existe
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories create ${_REPOSITORY} \
+          --repository-format=docker \
+          --location=${_REGION} \
+          --description="Repository for RUNA applications" \
+          --quiet || echo "Repository already exists"
   
+  # Construir imagen
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/runa-matcher:$BUILD_ID']
+    args: [
+      'build', 
+      '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$BUILD_ID',
+      '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest',
+      '.'
+    ]
   
+  # Subir imagen a Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}']
+  
+  # Desplegar en Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args: 
       - 'run'
       - 'deploy'
-      - 'runa-matcher'
+      - '${_SERVICE_NAME}'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/runa-matcher:$BUILD_ID'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
       - '--region'
-      - 'us-central1'
+      - '${_REGION}'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
@@ -23,6 +48,8 @@ steps:
       - '1'
       - '--max-instances'
       - '10'
+      - '--port'
+      - '8080'
 
 images:
-  - 'gcr.io/$PROJECT_ID/runa-matcher:$BUILD_ID'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'

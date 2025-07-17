@@ -1,0 +1,35 @@
+steps:
+  # Verificar archivos
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "=== VERIFICANDO ARCHIVOS ==="
+        ls -la
+        echo "=== CONTENIDO package.json ==="
+        cat package.json
+        echo "=== VERIFICANDO DOCKERFILE ==="
+        cat Dockerfile
+
+  # Crear repositorio si no existe
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories create runa-apps \
+          --repository-format=docker \
+          --location=us-central1 \
+          --description="Repository for RUNA applications" \
+          --quiet || echo "Repository already exists"
+  
+  # Construir imagen con logs verbosos
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '--no-cache',
+      '--progress=plain',
+      '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/runa-apps/runa-matcher:$BUILD_ID',
+      '.'
+    ]
