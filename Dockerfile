@@ -4,11 +4,11 @@ FROM node:18-alpine AS builder
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package*.json ./
+# Copiar solo package.json primero
+COPY package.json ./
 
-# Instalar TODAS las dependencias (incluyendo devDependencies para el build)
-RUN npm ci --no-optional
+# Instalar dependencias usando npm install (no ci)
+RUN npm install --production=false --no-optional
 
 # Copiar código fuente
 COPY . .

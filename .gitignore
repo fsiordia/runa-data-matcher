@@ -36,3 +36,16 @@ coverage/
 # Misc
 *.tgz
 .DS_Store
+
+# Temporary files
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+coverage
+.vscode
+.DS_Store
+dist
+*.log
